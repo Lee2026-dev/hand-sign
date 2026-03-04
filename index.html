@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="轻量化数字签名采集工具 — 在线手写签名，一键导出透明底 PNG" />
+  <title>Hand Sign — 在线手写签名</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+
+<body>
+
+  <main class="app">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header__title">Hand Sign</h1>
+      <p class="header__subtitle">在画板上书写您的签名，一键导出高清透明底图片</p>
+    </header>
+
+    <!-- Signature Canvas -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <span class="canvas-wrapper__hint">在此处签名</span>
+      <canvas id="signatureCanvas"></canvas>
+    </div>
+
+    <!-- Toolbar: Pen Settings -->
+    <div class="toolbar">
+      <div class="toolbar__group">
+        <span class="toolbar__label">颜色</span>
+        <input type="color" id="penColor" value="#000000" class="toolbar__color-input" aria-label="笔触颜色" />
+      </div>
+
+      <div class="toolbar__group">
+        <span class="toolbar__label">线宽</span>
+        <input type="range" id="penWidth" min="1" max="8" step="0.5" value="2.5" class="toolbar__range"
+          aria-label="笔触宽度" />
+        <span class="toolbar__range-value" id="penWidthValue">2.5px</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="btn btn--ghost" id="btnUndo" disabled aria-label="撤销">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        撤销
+      </button>
+
+      <button class="btn btn--danger" id="btnClear" aria-label="清除画板">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        清除
+      </button>
+
+      <span class="actions__spacer"></span>
+
+      <button class="btn btn--cta" id="btnExport" disabled aria-label="导出签名">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        导出 PNG
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      Hand Sign &mdash; 轻量在线签名工具
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
