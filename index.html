@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="轻量化数字签名采集工具 — 在线手写签名，一键导出透明底 PNG" />
+  <meta name="description" content="轻量化数字签名采集工具 — 在线手写签名 + 图片背景透明化，一键导出透明底 PNG" />
   <title>Hand Sign — 在线手写签名</title>
   <link rel="stylesheet" href="index.css" />
 </head>
@@ -15,61 +15,157 @@
     <!-- Header -->
     <header class="header">
       <h1 class="header__title">Hand Sign</h1>
-      <p class="header__subtitle">在画板上书写您的签名，一键导出高清透明底图片</p>
+      <p class="header__subtitle">手写签名 · 图片去背景 · 一键导出透明底 PNG</p>
     </header>
 
-    <!-- Signature Canvas -->
-    <div class="canvas-wrapper" id="canvasWrapper">
-      <span class="canvas-wrapper__hint">在此处签名</span>
-      <canvas id="signatureCanvas"></canvas>
-    </div>
+    <!-- Tab Navigation -->
+    <nav class="tabs" role="tablist" aria-label="功能切换">
+      <button class="tabs__item tabs__item--active" id="tabSign" role="tab" aria-selected="true"
+        aria-controls="panelSign">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        手写签名
+      </button>
+      <button class="tabs__item" id="tabBg" role="tab" aria-selected="false" aria-controls="panelBg">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        图片去背景
+      </button>
+    </nav>
 
-    <!-- Toolbar: Pen Settings -->
-    <div class="toolbar">
-      <div class="toolbar__group">
-        <span class="toolbar__label">颜色</span>
-        <input type="color" id="penColor" value="#000000" class="toolbar__color-input" aria-label="笔触颜色" />
+    <!-- =============== TAB 1: 手写签名 =============== -->
+    <div class="tab-panel" id="panelSign" role="tabpanel" aria-labelledby="tabSign">
+      <!-- Signature Canvas -->
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <span class="canvas-wrapper__hint">在此处签名</span>
+        <canvas id="signatureCanvas"></canvas>
       </div>
 
-      <div class="toolbar__group">
-        <span class="toolbar__label">线宽</span>
-        <input type="range" id="penWidth" min="1" max="8" step="0.5" value="2.5" class="toolbar__range"
-          aria-label="笔触宽度" />
-        <span class="toolbar__range-value" id="penWidthValue">2.5px</span>
+      <!-- Toolbar: Pen Settings -->
+      <div class="toolbar">
+        <div class="toolbar__group">
+          <span class="toolbar__label">颜色</span>
+          <input type="color" id="penColor" value="#000000" class="toolbar__color-input" aria-label="笔触颜色" />
+        </div>
+
+        <div class="toolbar__group">
+          <span class="toolbar__label">线宽</span>
+          <input type="range" id="penWidth" min="1" max="8" step="0.5" value="2.5" class="toolbar__range"
+            aria-label="笔触宽度" />
+          <span class="toolbar__range-value" id="penWidthValue">2.5px</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button class="btn btn--ghost" id="btnUndo" disabled aria-label="撤销">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          撤销
+        </button>
+
+        <button class="btn btn--danger" id="btnClear" aria-label="清除画板">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          清除
+        </button>
+
+        <span class="actions__spacer"></span>
+
+        <button class="btn btn--cta" id="btnExport" disabled aria-label="导出签名">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          导出 PNG
+        </button>
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="actions">
-      <button class="btn btn--ghost" id="btnUndo" disabled aria-label="撤销">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="1 4 1 10 7 10"></polyline>
-          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-        </svg>
-        撤销
-      </button>
+    <!-- =============== TAB 2: 图片去背景 =============== -->
+    <div class="tab-panel tab-panel--hidden" id="panelBg" role="tabpanel" aria-labelledby="tabBg">
 
-      <button class="btn btn--danger" id="btnClear" aria-label="清除画板">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-        清除
-      </button>
-
-      <span class="actions__spacer"></span>
-
-      <button class="btn btn--cta" id="btnExport" disabled aria-label="导出签名">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
+      <!-- Upload Zone -->
+      <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="点击或拖拽上传图片">
+        <input type="file" id="fileInput" accept="image/*" class="upload-zone__input" aria-hidden="true" />
+        <svg class="upload-zone__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
         </svg>
-        导出 PNG
-      </button>
+        <p class="upload-zone__text">点击或拖拽图片到此处</p>
+        <p class="upload-zone__hint">支持 PNG、JPG、WEBP 等常见格式</p>
+      </div>
+
+      <!-- Preview Canvas (hidden until image loaded) -->
+      <div class="bg-preview" id="bgPreview" style="display:none;">
+        <div class="canvas-wrapper canvas-wrapper--checker" id="bgCanvasWrapper">
+          <canvas id="bgCanvas"></canvas>
+        </div>
+
+        <!-- Tolerance Toolbar -->
+        <div class="toolbar">
+          <div class="toolbar__group">
+            <span class="toolbar__label">容差</span>
+            <input type="range" id="bgTolerance" min="0" max="120" step="1" value="30"
+              class="toolbar__range toolbar__range--wide" aria-label="去背景容差" />
+            <span class="toolbar__range-value" id="bgToleranceValue">30</span>
+          </div>
+          <div class="toolbar__group">
+            <span class="toolbar__label" style="font-size:0.75rem; color: var(--color-text-muted);">值越大，去除范围越广</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+          <button class="btn btn--ghost" id="btnBgReset" aria-label="重新上传">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            重新上传
+          </button>
+
+          <button class="btn btn--ghost" id="btnBgApply" aria-label="去除背景">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+            去除背景
+          </button>
+
+          <span class="actions__spacer"></span>
+
+          <button class="btn btn--cta" id="btnBgExport" disabled aria-label="导出透明底图片">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            导出 PNG
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Footer -->

@@ -133,20 +133,22 @@
 
   // --- Actions ---
   function undo() {
-    if (history.length <= 0) return;
+    // history[0] is always the blank floor — nothing to undo beyond that
+    if (history.length <= 1) return;
 
-    history.pop(); // remove current state
+    history.pop(); // remove current state, expose previous
 
     const rect = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    if (history.length > 0) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, rect.width, rect.height);
-      };
-      img.src = history[history.length - 1];
-    } else {
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, rect.width, rect.height);
+    };
+    img.src = history[history.length - 1];
+
+    // If we're back to the blank floor, remove has-content
+    if (history.length === 1) {
       wrapper.classList.remove('has-content');
     }
     updateUI();
@@ -199,9 +201,10 @@
 
   // --- UI Updates ---
   function updateUI() {
-    const hasContent = history.length > 0;
-    btnUndo.disabled = !hasContent;
-    btnExport.disabled = !hasContent;
+    // history[0] is the blank floor, so strokes exist only when length > 1
+    const hasStrokes = history.length > 1;
+    btnUndo.disabled = !hasStrokes;
+    btnExport.disabled = !hasStrokes;
   }
 
   function updateWidthDisplay() {
@@ -233,6 +236,199 @@
 
   // --- Init ---
   resizeCanvas();
+  saveSnapshot(); // save initial blank state as the undo floor
   updateWidthDisplay();
   updateUI();
+})();
+
+/* ============================================================
+   Tab Switching
+   ============================================================ */
+(function () {
+  'use strict';
+
+  const tabSign = document.getElementById('tabSign');
+  const tabBg = document.getElementById('tabBg');
+  const panelSign = document.getElementById('panelSign');
+  const panelBg = document.getElementById('panelBg');
+
+  function activateTab(activeTab, activePanel, inactiveTab, inactivePanel) {
+    activeTab.classList.add('tabs__item--active');
+    activeTab.setAttribute('aria-selected', 'true');
+    inactiveTab.classList.remove('tabs__item--active');
+    inactiveTab.setAttribute('aria-selected', 'false');
+    activePanel.classList.remove('tab-panel--hidden');
+    inactivePanel.classList.add('tab-panel--hidden');
+  }
+
+  tabSign.addEventListener('click', () => activateTab(tabSign, panelSign, tabBg, panelBg));
+  tabBg.addEventListener('click', () => activateTab(tabBg, panelBg, tabSign, panelSign));
+})();
+
+/* ============================================================
+   Background Removal Module
+   ============================================================ */
+(function () {
+  'use strict';
+
+  // --- DOM ---
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const bgPreview = document.getElementById('bgPreview');
+  const bgCanvas = document.getElementById('bgCanvas');
+  const bgCtx = bgCanvas.getContext('2d');
+  const toleranceInput = document.getElementById('bgTolerance');
+  const toleranceValue = document.getElementById('bgToleranceValue');
+  const btnBgApply = document.getElementById('btnBgApply');
+  const btnBgReset = document.getElementById('btnBgReset');
+  const btnBgExport = document.getElementById('btnBgExport');
+
+  // --- State ---
+  let originalImageData = null;  // raw ImageData before any removal
+  let sourceImg = null;  // original Image element
+
+  // --- Helper: euclidean color distance ---
+  function colorDist(r1, g1, b1, r2, g2, b2) {
+    return Math.sqrt(
+      (r1 - r2) * (r1 - r2) +
+      (g1 - g2) * (g1 - g2) +
+      (b1 - b2) * (b1 - b2)
+    );
+  }
+
+  // --- Sample background color from image corners ---
+  function sampleBgColor(data, width, height) {
+    const positions = [
+      [0, 0],
+      [width - 1, 0],
+      [0, height - 1],
+      [width - 1, height - 1],
+    ];
+    let r = 0, g = 0, b = 0;
+    for (const [x, y] of positions) {
+      const idx = (y * width + x) * 4;
+      r += data[idx];
+      g += data[idx + 1];
+      b += data[idx + 2];
+    }
+    return [Math.round(r / 4), Math.round(g / 4), Math.round(b / 4)];
+  }
+
+  // --- Core: remove background pixels within tolerance ---
+  function removeBackground(tolerance) {
+    if (!originalImageData) return;
+
+    // Work on a copy so we can re-apply with different tolerance
+    const copy = new ImageData(
+      new Uint8ClampedArray(originalImageData.data),
+      originalImageData.width,
+      originalImageData.height
+    );
+    const { data, width, height } = copy;
+    const [br, bg, bb] = sampleBgColor(originalImageData.data, width, height);
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      if (colorDist(r, g, b, br, bg, bb) <= tolerance) {
+        data[i + 3] = 0; // set alpha to 0 (transparent)
+      }
+    }
+
+    bgCtx.putImageData(copy, 0, 0);
+    btnBgExport.disabled = false;
+  }
+
+  // --- Load image onto canvas ---
+  function loadImage(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        sourceImg = img;
+
+        // Fit canvas to image aspect ratio (max 720×400)
+        const maxW = 720;
+        const maxH = 400;
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+
+        bgCanvas.width = w;
+        bgCanvas.height = h;
+        bgCanvas.style.height = '';   // let CSS handle display
+
+        bgCtx.clearRect(0, 0, w, h);
+        bgCtx.drawImage(img, 0, 0, w, h);
+
+        // Save the original pixel data for re-apply
+        originalImageData = bgCtx.getImageData(0, 0, w, h);
+
+        // Show preview area, hide upload zone
+        uploadZone.style.display = 'none';
+        bgPreview.style.display = 'flex';
+        btnBgExport.disabled = true;
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // --- Export ---
+  function exportResult() {
+    bgCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const now = new Date();
+      const dateStr =
+        now.getFullYear().toString() +
+        (now.getMonth() + 1).toString().padStart(2, '0') +
+        now.getDate().toString().padStart(2, '0');
+      a.download = `signature_nobg_${dateStr}.png`;
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  }
+
+  // --- Reset ---
+  function reset() {
+    originalImageData = null;
+    sourceImg = null;
+    fileInput.value = '';
+    btnBgExport.disabled = true;
+    bgPreview.style.display = 'none';
+    uploadZone.style.display = '';
+  }
+
+  // --- Event Listeners ---
+  fileInput.addEventListener('change', (e) => loadImage(e.target.files[0]));
+
+  // Drag and drop
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    loadImage(e.dataTransfer.files[0]);
+  });
+
+  toleranceInput.addEventListener('input', () => {
+    toleranceValue.textContent = toleranceInput.value;
+  });
+
+  btnBgApply.addEventListener('click', () => {
+    removeBackground(parseInt(toleranceInput.value, 10));
+  });
+
+  btnBgReset.addEventListener('click', reset);
+  btnBgExport.addEventListener('click', exportResult);
 })();
