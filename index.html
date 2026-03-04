@@ -87,15 +87,39 @@
 
         <span class="actions__spacer"></span>
 
-        <button class="btn btn--cta" id="btnExport" disabled aria-label="导出签名">
+        <button class="btn btn--copy" id="btnCopy" disabled aria-label="复制到剪贴板">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
-          导出 PNG
+          <span class="btn__label">复制</span>
         </button>
+
+        <div class="split-btn" id="splitExport">
+          <button class="btn btn--cta split-btn__main" id="btnExport" disabled aria-label="导出签名">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="exportLabel">导出 PNG</span>
+          </button>
+          <button class="btn btn--cta split-btn__toggle" id="btnExportToggle" disabled aria-label="选择导出格式"
+            aria-haspopup="true" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="export-menu" id="exportMenu" role="menu">
+            <button class="export-menu__item export-menu__item--active" data-format="png" role="menuitem">PNG<span class="export-menu__note">透明底</span></button>
+            <button class="export-menu__item" data-format="jpeg" role="menuitem">JPEG<span class="export-menu__note">白色底</span></button>
+            <button class="export-menu__item" data-format="webp" role="menuitem">WebP<span class="export-menu__note">透明底</span></button>
+            <button class="export-menu__item" data-format="svg" role="menuitem">SVG<span class="export-menu__note">矢量</span></button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -157,15 +181,39 @@
 
           <span class="actions__spacer"></span>
 
-          <button class="btn btn--cta" id="btnBgExport" disabled aria-label="导出透明底图片">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
+          <button class="btn btn--copy" id="btnBgCopy" disabled aria-label="复制到剪贴板">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
-            导出 PNG
+            <span class="btn__label">复制</span>
           </button>
+
+          <div class="split-btn" id="splitBgExport">
+            <button class="btn btn--cta split-btn__main" id="btnBgExport" disabled aria-label="导出透明底图片">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span id="bgExportLabel">导出 PNG</span>
+            </button>
+            <button class="btn btn--cta split-btn__toggle" id="btnBgExportToggle" disabled aria-label="选择导出格式"
+              aria-haspopup="true" aria-expanded="false">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="export-menu" id="bgExportMenu" role="menu">
+              <button class="export-menu__item export-menu__item--active" data-format="png" role="menuitem">PNG<span class="export-menu__note">透明底</span></button>
+              <button class="export-menu__item" data-format="jpeg" role="menuitem">JPEG<span class="export-menu__note">白色底</span></button>
+              <button class="export-menu__item" data-format="webp" role="menuitem">WebP<span class="export-menu__note">透明底</span></button>
+              <button class="export-menu__item" data-format="svg" role="menuitem">SVG<span class="export-menu__note">矢量</span></button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

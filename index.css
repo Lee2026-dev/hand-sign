@@ -591,6 +591,142 @@ body::after {
   width: 160px;
 }
 
+/* --- Split Button --- */
+.split-btn {
+  display: inline-flex;
+  position: relative;
+}
+
+.split-btn__main {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.split-btn__toggle {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  padding: 11px 10px;
+  border-left: 1px solid rgba(15, 17, 23, 0.2) !important;
+  min-width: 36px;
+}
+
+.split-btn__toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--transition);
+}
+
+.split-btn__toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* --- Export Format Menu --- */
+.export-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity var(--transition), transform var(--transition), visibility var(--transition);
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.export-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.export-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  font-family: var(--font-family);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 4px);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+}
+
+.export-menu__item:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+.export-menu__item--active {
+  color: var(--color-primary);
+  background: rgba(212, 165, 116, 0.08);
+}
+
+.export-menu__item--active::before {
+  content: '✓';
+  margin-right: 6px;
+  font-size: 0.7rem;
+}
+
+.export-menu__note {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+/* --- Copy Button --- */
+.btn--copy {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(4px);
+}
+
+.btn--copy:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--color-surface-hover);
+}
+
+.btn--copy:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--copy.is-copied {
+  color: #34D399;
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.08);
+  animation: copiedPulse 0.4s ease;
+}
+
+@keyframes copiedPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* --- Footer --- */
 .footer {
   text-align: center;
@@ -650,6 +786,19 @@ body::after {
 
   .toolbar__range--wide {
     width: 120px;
+  }
+
+  .split-btn__toggle {
+    padding: 9px 8px;
+    min-width: 30px;
+  }
+
+  .btn--copy .btn__label {
+    display: none;
+  }
+
+  .actions {
+    gap: 8px;
   }
 }
 

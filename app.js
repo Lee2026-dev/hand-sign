@@ -3,6 +3,212 @@
  * Smooth Bézier curve drawing with pen customization and export.
  */
 
+/* ============================================================
+   Shared Export Utilities
+   ============================================================ */
+const ExportUtils = (function () {
+  'use strict';
+
+  const FORMAT_CONFIG = {
+    png: { mime: 'image/png', ext: '.png', label: '导出 PNG', transparent: true },
+    jpeg: { mime: 'image/jpeg', ext: '.jpg', label: '导出 JPEG', transparent: false },
+    webp: { mime: 'image/webp', ext: '.webp', label: '导出 WebP', transparent: true },
+    svg: { mime: 'image/svg+xml', ext: '.svg', label: '导出 SVG', transparent: true },
+  };
+
+  const STORAGE_KEY = 'handsign_export_format';
+
+  function getSavedFormat() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return FORMAT_CONFIG[saved] ? saved : 'png';
+  }
+
+  function saveFormat(fmt) {
+    localStorage.setItem(STORAGE_KEY, fmt);
+  }
+
+  function getDateStr() {
+    const now = new Date();
+    return now.getFullYear().toString()
+      + (now.getMonth() + 1).toString().padStart(2, '0')
+      + now.getDate().toString().padStart(2, '0');
+  }
+
+  /**
+   * Export a canvas to a file download.
+   * @param {HTMLCanvasElement} sourceCanvas
+   * @param {string} format - 'png' | 'jpeg' | 'webp' | 'svg'
+   * @param {string} filenamePrefix - e.g. 'signature' or 'signature_nobg'
+   */
+  function downloadCanvas(sourceCanvas, format, filenamePrefix) {
+    const config = FORMAT_CONFIG[format];
+    if (!config) return;
+
+    const dateStr = getDateStr();
+
+    if (format === 'svg') {
+      // Wrap canvas data URL inside an SVG <image>
+      const dataUrl = sourceCanvas.toDataURL('image/png');
+      const w = sourceCanvas.width;
+      const h = sourceCanvas.height;
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <image width="${w}" height="${h}" xlink:href="${dataUrl}" />
+</svg>`;
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+      triggerDownload(blob, `${filenamePrefix}_${dateStr}${config.ext}`);
+      return;
+    }
+
+    // For JPEG, we need a white background
+    let exportCanvas = sourceCanvas;
+    if (format === 'jpeg') {
+      exportCanvas = document.createElement('canvas');
+      exportCanvas.width = sourceCanvas.width;
+      exportCanvas.height = sourceCanvas.height;
+      const ectx = exportCanvas.getContext('2d');
+      ectx.fillStyle = '#FFFFFF';
+      ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      ectx.drawImage(sourceCanvas, 0, 0);
+    }
+
+    exportCanvas.toBlob((blob) => {
+      if (!blob) return;
+      triggerDownload(blob, `${filenamePrefix}_${dateStr}${config.ext}`);
+    }, config.mime, format === 'jpeg' ? 0.92 : undefined);
+  }
+
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.download = filename;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    // Delay cleanup to allow browser to register the download filename
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+  }
+
+  /**
+   * Copy canvas content to clipboard as PNG.
+   * @param {HTMLCanvasElement} sourceCanvas
+   * @returns {Promise<boolean>}
+   */
+  async function copyToClipboard(sourceCanvas) {
+    try {
+      const blob = await new Promise((resolve, reject) => {
+        sourceCanvas.toBlob((b) => {
+          if (b) resolve(b);
+          else reject(new Error('toBlob failed'));
+        }, 'image/png');
+      });
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      return true;
+    } catch (err) {
+      console.error('Copy to clipboard failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Flash a "copied" state on a button.
+   * @param {HTMLButtonElement} btn
+   */
+  function flashCopied(btn) {
+    const labelEl = btn.querySelector('.btn__label');
+    const origText = labelEl.textContent;
+    btn.classList.add('is-copied');
+    labelEl.textContent = '✓ 已复制';
+    setTimeout(() => {
+      btn.classList.remove('is-copied');
+      labelEl.textContent = origText;
+    }, 1500);
+  }
+
+  /**
+   * Set up split button + dropdown menu for a panel.
+   * @param {Object} opts
+   * @param {HTMLElement} opts.toggleBtn - the ▾ button
+   * @param {HTMLElement} opts.menu - the dropdown menu
+   * @param {HTMLElement} opts.labelEl - the label span inside the main button
+   * @param {Function} opts.onFormatChange - callback(format)
+   */
+  function initSplitMenu({ toggleBtn, menu, labelEl, onFormatChange }) {
+    const currentFormat = getSavedFormat();
+    const config = FORMAT_CONFIG[currentFormat];
+    labelEl.textContent = config.label;
+
+    // Mark the active item in this menu
+    menu.querySelectorAll('.export-menu__item').forEach((item) => {
+      item.classList.toggle('export-menu__item--active', item.dataset.format === currentFormat);
+    });
+
+    // Toggle dropdown
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = menu.classList.toggle('is-open');
+      toggleBtn.setAttribute('aria-expanded', isOpen);
+    });
+
+    // Select format
+    menu.addEventListener('click', (e) => {
+      const item = e.target.closest('.export-menu__item');
+      if (!item) return;
+
+      const fmt = item.dataset.format;
+      saveFormat(fmt);
+
+      // Update active markers
+      menu.querySelectorAll('.export-menu__item').forEach((el) => {
+        el.classList.toggle('export-menu__item--active', el.dataset.format === fmt);
+      });
+
+      // Sync label on BOTH panels
+      document.getElementById('exportLabel').textContent = FORMAT_CONFIG[fmt].label;
+      document.getElementById('bgExportLabel').textContent = FORMAT_CONFIG[fmt].label;
+
+      // Sync active markers on the OTHER menu too
+      const otherMenuId = menu.id === 'exportMenu' ? 'bgExportMenu' : 'exportMenu';
+      document.getElementById(otherMenuId).querySelectorAll('.export-menu__item').forEach((el) => {
+        el.classList.toggle('export-menu__item--active', el.dataset.format === fmt);
+      });
+
+      menu.classList.remove('is-open');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+
+      if (onFormatChange) onFormatChange(fmt);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', () => {
+      menu.classList.remove('is-open');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  return {
+    FORMAT_CONFIG,
+    getSavedFormat,
+    saveFormat,
+    downloadCanvas,
+    copyToClipboard,
+    flashCopied,
+    initSplitMenu,
+  };
+})();
+
+
+/* ============================================================
+   Signature Canvas Module
+   ============================================================ */
 (function () {
   'use strict';
 
@@ -18,6 +224,8 @@
   const btnUndo = document.getElementById('btnUndo');
   const btnClear = document.getElementById('btnClear');
   const btnExport = document.getElementById('btnExport');
+  const btnExportToggle = document.getElementById('btnExportToggle');
+  const btnCopy = document.getElementById('btnCopy');
 
   // --- State ---
   let isDrawing = false;
@@ -174,27 +382,30 @@
     exportCanvas.width = rect.width * dpr;
     exportCanvas.height = rect.height * dpr;
 
-    // Draw from the current canvas data
     const img = new Image();
     img.onload = () => {
       exportCtx.drawImage(img, 0, 0);
+      ExportUtils.downloadCanvas(exportCanvas, ExportUtils.getSavedFormat(), 'signature');
+    };
+    img.src = history[history.length - 1];
+  }
 
-      exportCanvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const now = new Date();
-        const dateStr =
-          now.getFullYear().toString() +
-          (now.getMonth() + 1).toString().padStart(2, '0') +
-          now.getDate().toString().padStart(2, '0');
-        a.download = `signature_${dateStr}.png`;
-        a.href = url;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 'image/png');
+  async function copySignature() {
+    if (history.length === 0) return;
+
+    const exportCanvas = document.createElement('canvas');
+    const exportCtx = exportCanvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    exportCanvas.width = rect.width * dpr;
+    exportCanvas.height = rect.height * dpr;
+
+    const img = new Image();
+    img.onload = async () => {
+      exportCtx.drawImage(img, 0, 0);
+      const ok = await ExportUtils.copyToClipboard(exportCanvas);
+      if (ok) ExportUtils.flashCopied(btnCopy);
     };
     img.src = history[history.length - 1];
   }
@@ -205,11 +416,21 @@
     const hasStrokes = history.length > 1;
     btnUndo.disabled = !hasStrokes;
     btnExport.disabled = !hasStrokes;
+    btnExportToggle.disabled = !hasStrokes;
+    btnCopy.disabled = !hasStrokes;
   }
 
   function updateWidthDisplay() {
     widthValue.textContent = `${widthInput.value}px`;
   }
+
+  // --- Split Menu Init ---
+  ExportUtils.initSplitMenu({
+    toggleBtn: btnExportToggle,
+    menu: document.getElementById('exportMenu'),
+    labelEl: document.getElementById('exportLabel'),
+    onFormatChange: null,
+  });
 
   // --- Event Listeners ---
   // Pointer events (unified mouse + touch)
@@ -226,6 +447,7 @@
   btnUndo.addEventListener('click', undo);
   btnClear.addEventListener('click', clearCanvas);
   btnExport.addEventListener('click', exportSignature);
+  btnCopy.addEventListener('click', copySignature);
 
   // Resize handling
   let resizeTimer;
@@ -282,10 +504,13 @@
   const btnBgApply = document.getElementById('btnBgApply');
   const btnBgReset = document.getElementById('btnBgReset');
   const btnBgExport = document.getElementById('btnBgExport');
+  const btnBgExportToggle = document.getElementById('btnBgExportToggle');
+  const btnBgCopy = document.getElementById('btnBgCopy');
 
   // --- State ---
   let originalImageData = null;  // raw ImageData before any removal
   let sourceImg = null;  // original Image element
+  let bgRemoved = false; // track if background has been removed
 
   // --- Helper: euclidean color distance ---
   function colorDist(r1, g1, b1, r2, g2, b2) {
@@ -335,7 +560,8 @@
     }
 
     bgCtx.putImageData(copy, 0, 0);
-    btnBgExport.disabled = false;
+    bgRemoved = true;
+    updateBgUI();
   }
 
   // --- Load image onto canvas ---
@@ -369,7 +595,8 @@
         // Show preview area, hide upload zone
         uploadZone.style.display = 'none';
         bgPreview.style.display = 'flex';
-        btnBgExport.disabled = true;
+        bgRemoved = false;
+        updateBgUI();
       };
       img.src = e.target.result;
     };
@@ -378,22 +605,21 @@
 
   // --- Export ---
   function exportResult() {
-    bgCanvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const now = new Date();
-      const dateStr =
-        now.getFullYear().toString() +
-        (now.getMonth() + 1).toString().padStart(2, '0') +
-        now.getDate().toString().padStart(2, '0');
-      a.download = `signature_nobg_${dateStr}.png`;
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 'image/png');
+    ExportUtils.downloadCanvas(bgCanvas, ExportUtils.getSavedFormat(), 'signature_nobg');
+  }
+
+  // --- Copy ---
+  async function copyResult() {
+    const ok = await ExportUtils.copyToClipboard(bgCanvas);
+    if (ok) ExportUtils.flashCopied(btnBgCopy);
+  }
+
+  // --- UI ---
+  function updateBgUI() {
+    const canExport = bgRemoved;
+    btnBgExport.disabled = !canExport;
+    btnBgExportToggle.disabled = !canExport;
+    btnBgCopy.disabled = !canExport;
   }
 
   // --- Reset ---
@@ -401,10 +627,19 @@
     originalImageData = null;
     sourceImg = null;
     fileInput.value = '';
-    btnBgExport.disabled = true;
+    bgRemoved = false;
+    updateBgUI();
     bgPreview.style.display = 'none';
     uploadZone.style.display = '';
   }
+
+  // --- Split Menu Init ---
+  ExportUtils.initSplitMenu({
+    toggleBtn: btnBgExportToggle,
+    menu: document.getElementById('bgExportMenu'),
+    labelEl: document.getElementById('bgExportLabel'),
+    onFormatChange: null,
+  });
 
   // --- Event Listeners ---
   fileInput.addEventListener('change', (e) => loadImage(e.target.files[0]));
@@ -431,4 +666,5 @@
 
   btnBgReset.addEventListener('click', reset);
   btnBgExport.addEventListener('click', exportResult);
+  btnBgCopy.addEventListener('click', copyResult);
 })();
