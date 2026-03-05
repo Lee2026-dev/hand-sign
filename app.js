@@ -171,14 +171,21 @@ const ExportUtils = (function () {
         el.classList.toggle('export-menu__item--active', el.dataset.format === fmt);
       });
 
-      // Sync label on BOTH panels
+      // Sync label on ALL panels
       document.getElementById('exportLabel').textContent = FORMAT_CONFIG[fmt].label;
       document.getElementById('bgExportLabel').textContent = FORMAT_CONFIG[fmt].label;
+      const scanLabel = document.getElementById('scanExportLabel');
+      if (scanLabel) scanLabel.textContent = FORMAT_CONFIG[fmt].label;
 
-      // Sync active markers on the OTHER menu too
-      const otherMenuId = menu.id === 'exportMenu' ? 'bgExportMenu' : 'exportMenu';
-      document.getElementById(otherMenuId).querySelectorAll('.export-menu__item').forEach((el) => {
-        el.classList.toggle('export-menu__item--active', el.dataset.format === fmt);
+      // Sync active markers on the OTHER menus too
+      const allMenuIds = ['exportMenu', 'bgExportMenu', 'scanExportMenu'];
+      allMenuIds.forEach(id => {
+        if (id === menu.id) return;
+        const otherMenu = document.getElementById(id);
+        if (!otherMenu) return;
+        otherMenu.querySelectorAll('.export-menu__item').forEach((el) => {
+          el.classList.toggle('export-menu__item--active', el.dataset.format === fmt);
+        });
       });
 
       menu.classList.remove('is-open');
@@ -198,6 +205,7 @@ const ExportUtils = (function () {
     FORMAT_CONFIG,
     getSavedFormat,
     saveFormat,
+    getDateStr,
     downloadCanvas,
     copyToClipboard,
     flashCopied,
@@ -469,22 +477,24 @@ const ExportUtils = (function () {
 (function () {
   'use strict';
 
-  const tabSign = document.getElementById('tabSign');
-  const tabBg = document.getElementById('tabBg');
-  const panelSign = document.getElementById('panelSign');
-  const panelBg = document.getElementById('panelBg');
+  const tabs = [
+    { tab: document.getElementById('tabSign'), panel: document.getElementById('panelSign') },
+    { tab: document.getElementById('tabBg'), panel: document.getElementById('panelBg') },
+    { tab: document.getElementById('tabScan'), panel: document.getElementById('panelScan') },
+  ];
 
-  function activateTab(activeTab, activePanel, inactiveTab, inactivePanel) {
-    activeTab.classList.add('tabs__item--active');
-    activeTab.setAttribute('aria-selected', 'true');
-    inactiveTab.classList.remove('tabs__item--active');
-    inactiveTab.setAttribute('aria-selected', 'false');
-    activePanel.classList.remove('tab-panel--hidden');
-    inactivePanel.classList.add('tab-panel--hidden');
+  function activateTab(index) {
+    tabs.forEach((t, i) => {
+      const isActive = i === index;
+      t.tab.classList.toggle('tabs__item--active', isActive);
+      t.tab.setAttribute('aria-selected', String(isActive));
+      t.panel.classList.toggle('tab-panel--hidden', !isActive);
+    });
   }
 
-  tabSign.addEventListener('click', () => activateTab(tabSign, panelSign, tabBg, panelBg));
-  tabBg.addEventListener('click', () => activateTab(tabBg, panelBg, tabSign, panelSign));
+  tabs.forEach((t, i) => {
+    t.tab.addEventListener('click', () => activateTab(i));
+  });
 })();
 
 /* ============================================================

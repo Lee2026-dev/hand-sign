@@ -808,6 +808,135 @@ body::after {
   }
 }
 
+/* ============================================
+   Scanner Tab Styles
+   ============================================ */
+
+/* --- Scan Section --- */
+.scan-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeInUp 0.35s ease both;
+}
+
+/* --- Crop Container --- */
+.scan-crop-container {
+  position: relative;
+  margin: 0 auto;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+#scanCropCanvas {
+  display: block;
+}
+
+.scan-overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  touch-action: none;
+}
+
+/* --- Scan Hint --- */
+.scan-hint {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+/* --- Settings Panel --- */
+.scan-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.scan-settings__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* --- Mode Selector --- */
+.scan-mode-group {
+  display: flex;
+  gap: 6px;
+}
+
+.scan-mode-btn {
+  padding: 7px 14px;
+  font-family: var(--font-family);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all var(--transition);
+  user-select: none;
+}
+
+.scan-mode-btn:hover {
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--color-surface-hover);
+}
+
+.scan-mode-btn--active {
+  color: var(--color-primary);
+  background: rgba(212, 165, 116, 0.1);
+  border-color: rgba(212, 165, 116, 0.3);
+  font-weight: 600;
+}
+
+.scan-mode-btn--active::before {
+  content: '✓ ';
+  font-size: 0.65rem;
+}
+
+/* --- Result Canvas --- */
+#scanResultCanvas {
+  display: block;
+  width: 100%;
+  max-height: 450px;
+  object-fit: contain;
+}
+
+/* --- Responsive (Scanner) --- */
+@media (max-width: 480px) {
+  .scan-settings__row {
+    gap: 10px;
+  }
+
+  .scan-mode-btn {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+
+  .scan-settings {
+    padding: 14px 16px;
+  }
+}
+
 /* --- Reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
 
